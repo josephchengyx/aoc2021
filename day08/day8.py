@@ -76,9 +76,7 @@ def part2(data, output):
                             - {segment_map['a'], segment_map['d'], segment_map['e'], segment_map['g']}).pop()
 
         # bottom-right/'f' segment
-        five_digit = next(filter(lambda digit: segment_map['b'] in digit, get_n_segment_digits(5)))
-        segment_map['f'] = (five_digit
-                            - {segment_map['a'], segment_map['b'], segment_map['d'], segment_map['g']}).pop()
+        segment_map['f'] = (one_digit - {segment_map['c']}).pop()
 
         # flip encoding into decoding map
         segment_map = {val: key for key, val in segment_map.items()}
