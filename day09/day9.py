@@ -1,3 +1,4 @@
+from collections import deque
 from functools import reduce
 
 with open('day9_input.txt', newline='') as f:
@@ -37,11 +38,11 @@ def part2(data):
     basin_sizes = [0, 0]
 
     def bfs(x, y, tag):
-        queue = [(x, y)]
+        queue = deque([(x, y)])
         basin_ids[y][x] = tag
         basin_sizes[tag] += 1
         while queue:
-            x, y = queue.pop(0)
+            x, y = queue.popleft()
             neighbours = get_neighbours(x, y)
             for (nx, ny) in neighbours:
                 if basin_ids[ny][nx] == 0:
