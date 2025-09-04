@@ -1,8 +1,7 @@
-import math
 import operator
 from functools import reduce
 
-with open('day16_test.txt', newline='') as f:
+with open('day16_input.txt', newline='') as f:
     reader = f.read().splitlines()
     data = list(reader[0])
 
@@ -15,14 +14,13 @@ def convert_to_bits(data):
         return mapping.get(char, '')
     return ''.join(map(hex_to_bits, data))
 
-def parse_packets(data, num_pkts=math.inf):
+def parse_packet(data):
     version_len = 3
     type_id_len = 3
     header_len = version_len + type_id_len
     literal_group_len = 5
     op_15_bit_field_len = 15
     op_11_bit_field_len = 11
-    empty_content = -1
 
     def parse_header(ptr, data):
         version = int(data[ptr:ptr+version_len], 2)
@@ -47,32 +45,39 @@ def parse_packets(data, num_pkts=math.inf):
     def parse_operator(ptr, data):
         length_type_id = data[ptr]
         ptr += 1
+        subpkt_vers = list()
+        subpkt_tids = list()
+        subpkt_cnts = list()
         if length_type_id == '0':
             subpkt_len = int(data[ptr:ptr+op_15_bit_field_len], 2)
             ptr += op_15_bit_field_len
-            (subpkt_vers, subpkt_tids, subpkt_cnts), _ = parse_packets(data[ptr:ptr+subpkt_len])
-            ptr += subpkt_len
+            pkt_end = ptr + subpkt_len
+            while ptr < pkt_end:
+                (vers, tids, cnts), ptr_shft = parse_packet(data[ptr:])
+                subpkt_vers.extend(vers)
+                subpkt_tids.append(tids)
+                subpkt_cnts.append(cnts)
+                ptr += ptr_shft
         else: # length_type_id == '1'
             subpkt_num = int(data[ptr:ptr+op_11_bit_field_len], 2)
             ptr += op_11_bit_field_len
-            (subpkt_vers, subpkt_tids, subpkt_cnts), ptr_shft = parse_packets(data[ptr:], subpkt_num)
-            ptr += ptr_shft
+            for _ in range(subpkt_num):
+                (vers, tids, cnts), ptr_shft = parse_packet(data[ptr:])
+                subpkt_vers.extend(vers)
+                subpkt_tids.append(tids)
+                subpkt_cnts.append(cnts)
+                ptr += ptr_shft
         return (subpkt_vers, subpkt_tids, subpkt_cnts), ptr
 
     versions = list()
     type_ids = list()
     contents = list()
     ptr = 0
-    pkt_count = 0
 
-    while ptr < len(data):
-        if ptr + header_len >= len(data) - 1 or pkt_count >= num_pkts:
-            break
-
+    if ptr + header_len < len(data) - 1:
         (version, type_id), ptr = parse_header(ptr, data)
         versions.append(version)
         type_ids.append(type_id)
-        pkt_count += 1
 
         if type_id == 4:
             literal, ptr = parse_literal(ptr, data)
@@ -87,12 +92,11 @@ def parse_packets(data, num_pkts=math.inf):
 
 def read_transmission(data):
     data = convert_to_bits(data)
-    (versions, type_ids, contents), _ = parse_packets(data)
+    (versions, type_ids, contents), _ = parse_packet(data)
     return versions, type_ids, contents
 
 def evaluate(type_ids, contents):
-    op = type_ids[0] if type(type_ids) == list else type_ids
-    content = contents[0] if type(contents) == list else contents
+    op, content = type_ids[0], contents[0]
     value = 0
     match op:
         case 0:
@@ -108,23 +112,14 @@ def evaluate(type_ids, contents):
         case 4:
             value = content
         case 5:
-            value = int(reduce(operator.gt,
-                           map(evaluate, type_ids[1], content)))
-            # num_subs = len(type_ids[1])
-            # value = int(evaluate(type_ids[1][:num_subs//2], content[0])
-            #             > evaluate(type_ids[1][num_subs//2:], content[1]))
+            value = int(evaluate(type_ids[1][0], content[0])
+                        > evaluate(type_ids[1][1], content[1]))
         case 6:
-            value = int(reduce(operator.lt,
-                           map(evaluate, type_ids[1], content)))
-            # num_subs = len(type_ids[1])
-            # value = int(evaluate(type_ids[1][:num_subs//2], content[0])
-            #             < evaluate(type_ids[1][num_subs//2:], content[1]))
+            value = int(evaluate(type_ids[1][0], content[0])
+                        < evaluate(type_ids[1][1], content[1]))
         case 7:
-            value = int(reduce(operator.eq,
-                           map(evaluate, type_ids[1], content)))
-            # num_subs = len(type_ids[1])
-            # value = int(evaluate(type_ids[1][:num_subs//2], content[0])
-            #             == evaluate(type_ids[1][num_subs//2:], content[1]))
+            value = int(evaluate(type_ids[1][0], content[0])
+                        == evaluate(type_ids[1][1], content[1]))
     return value
 
 def part1(data):
@@ -135,9 +130,5 @@ def part2(data):
     versions, type_ids, contents = read_transmission(data)
     return evaluate(type_ids, contents)
 
-versions, type_ids, contents = read_transmission(data)
-print(versions)
-print(type_ids)
-print(contents)
-# print(evaluate(type_ids, contents))
-# print(f"Part 1: {part1(data)}")
+print(f"Part 1: {part1(data)}")
+print(f"Part 2: {part2(data)}")
