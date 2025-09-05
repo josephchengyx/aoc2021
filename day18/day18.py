@@ -1,111 +1,29 @@
+from functools import reduce
+from itertools import permutations
+from BinaryTree import BinaryTree
+
 with open('day18_input.txt', newline='') as f:
     reader = f.read().splitlines()
-    data = list()
+    numbers = list()
     for line in reader:
-        data.append(eval(line))
+        numbers.append(eval(line))
 
 def print_list(lst):
     for elem in lst:
         print(elem)
 
+def part1(numbers):
+    numbers = [BinaryTree.from_list(line) for line in numbers]
+    res = reduce(lambda x, y: x.add(y), numbers)
+    return res.magnitude()
 
-class LeafNode:
-    def __init__(self, value, depth=0):
-        self.value = value
-        self.depth = depth
+def part2(numbers):
+    all_pairs = list(permutations(range(len(numbers)), 2))
+    best = 0
+    for (i, j) in all_pairs:
+        res = BinaryTree.from_list(numbers[i]).add(BinaryTree.from_list(numbers[j]))
+        best = max(best, res.magnitude())
+    return best
 
-    def __repr__(self):
-        return str(self.value)
-
-    @staticmethod
-    def is_leaf():
-        return True
-
-    def increase_depth(self):
-        self.depth += 1
-
-    def decrease_depth(self):
-        self.depth -= 1
-
-    def reconstruct(self):
-        return self.value
-
-    def flatten(self):
-        return [self.value], [self.depth]
-
-    def magnitude(self):
-        return self.value
-
-
-class BinaryTree:
-    def __init__(self, left, right, depth=0):
-        self.left = left
-        self.right = right
-        self.depth = depth
-
-    def __repr__(self):
-        return str(BinaryTree.reconstruct(self))
-
-    @classmethod
-    def from_list(cls, lst, depth=0):
-        left, right = lst
-        if type(left) == list:
-            left = BinaryTree.from_list(left, depth+1)
-        else:
-            left = LeafNode(left, depth)
-        if type(right) == list:
-            right = BinaryTree.from_list(right, depth+1)
-        else:
-            right = LeafNode(right, depth)
-        return cls(left, right, depth)
-
-    @staticmethod
-    def is_leaf():
-        return False
-
-    def increase_depth(self):
-        self.depth += 1
-        self.left.increase_depth()
-        self.right.increase_depth()
-
-    def decrease_depth(self):
-        self.depth -= 1
-        self.left.decrease_depth()
-        self.right.decrease_depth()
-
-    def reconstruct(self):
-        if self.is_leaf():
-            return self.reconstruct()
-        return [self.left.reconstruct(),
-                self.right.reconstruct()]
-
-    def flatten(self):
-        values, depth = list(), list()
-        if self.is_leaf():
-            self_value, self_depth = self.flatten()
-            values.extend(self_value)
-            depth.extend(self_depth)
-        else:
-            left_value, left_depth,  = self.left.flatten()
-            right_value, right_depth = self.right.flatten()
-            values.extend(left_value)
-            values.extend(right_value)
-            depth.extend(left_depth)
-            depth.extend(right_depth)
-        return values, depth
-
-    def magnitude(self):
-        return 3 * self.left.magnitude() + 2 * self.right.magnitude()
-
-    def add(self, tree):
-        root = BinaryTree(self, tree)
-        self.increase_depth()
-        tree.increase_depth()
-        return root
-
-test = [[[[8, 7], [7, 7]], [[8, 6], [7, 7]]], [[[0, 7], [6, 6]], [8, 7]]]
-tree = BinaryTree.from_list(test)
-tree_values, tree_depths = tree.flatten()
-print(tree)
-print(tree_values)
-print(tree_depths)
+print(f"Part 1: {part1(numbers)}")
+print(f"Part 2: {part2(numbers)}")
