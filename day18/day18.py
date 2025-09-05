@@ -18,9 +18,8 @@ def part1(numbers):
     return res.magnitude()
 
 def part2(numbers):
-    all_pairs = list(permutations(range(len(numbers)), 2))
     best = 0
-    for (i, j) in all_pairs:
+    for (i, j) in permutations(range(len(numbers)), 2):
         res = BinaryTree.from_list(numbers[i]).add(BinaryTree.from_list(numbers[j]))
         best = max(best, res.magnitude())
     return best
