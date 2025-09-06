@@ -34,7 +34,6 @@ class BinaryTree:
     def is_root(self):
         return True if self.parent is None else False
 
-
     def increase_depth(self):
         self.depth += 1
         self.left.increase_depth()
