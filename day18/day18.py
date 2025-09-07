@@ -1,3 +1,4 @@
+import ast
 from functools import reduce
 from itertools import permutations
 from BinaryTree import BinaryTree
@@ -6,7 +7,7 @@ with open('day18_input.txt', newline='') as f:
     reader = f.read().splitlines()
     numbers = list()
     for line in reader:
-        numbers.append(eval(line))
+        numbers.append(ast.literal_eval(line))
 
 def print_list(lst):
     for elem in lst:

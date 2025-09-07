@@ -37,20 +37,20 @@ class Grid:
                 grid[y][x] = (grid[y][x] - 1 + n) % 9 + 1
         return grid
 
-    def __extend_right(self, ext):
+    def _extend_right(self, ext):
         for i, row in enumerate(self.grid):
             row.extend(ext[i])
 
-    def __extend_down(self, ext):
+    def _extend_down(self, ext):
         self.grid.extend(ext)
 
     def multiply_grid(self, n):
         orig_grid = Grid.deepcopy(self.grid)
         for i in range(1, n):
-            self.__extend_right(Grid.add(orig_grid, i))
+            self._extend_right(Grid.add(orig_grid, i))
         orig_grid = Grid.deepcopy(self.grid)
         for i in range(1, n):
-            self.__extend_down(Grid.add(orig_grid, i))
+            self._extend_down(Grid.add(orig_grid, i))
         self.x_range, self.y_range = Grid.grid_size(self.grid)
 
     def get_neighbours(self, x, y):
