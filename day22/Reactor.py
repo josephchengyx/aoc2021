@@ -1,7 +1,7 @@
 class Reactor:
     def __init__(self):
-        self.on_regions = set()
-        self.off_regions = set()
+        self.on_regions = list()
+        self.off_regions = list()
         self.on_cubes = 0
 
     def get_on_cubes(self):
@@ -11,35 +11,29 @@ class Reactor:
         action, region = instruction[0], Region(*instruction[1:])
         match action:
             case 'on':
-                self._turn_on_cubes(region)
+                self._flip_cubes(region)
+                self.on_regions.append(region)
+                self.on_cubes += region.volume()
             case 'off':
-                self._turn_off_cubes(region)
+                self._flip_cubes(region)
 
-    def _turn_on_cubes(self, region):
-        changed = region.volume()
+    def _flip_cubes(self, region):
+        on_regions_to_add = list()
+        off_regions_to_add = list()
+        volume_change = 0
         for on_region in self.on_regions:
-            if on_region.is_overlapping(region):
-                overlap_region = on_region.get_overlap(region)
-                self.off_regions.add(overlap_region)
-                changed = max(changed - overlap_region.volume(), 0)
-        self.on_regions.add(region)
-        self.on_cubes += changed
-
-    def _turn_off_cubes(self, region):
-        changed = 0
-        new_off_regions = set()
-        for on_region in self.on_regions:
-            if on_region.is_overlapping(region):
-                overlap_region = on_region.get_overlap(region)
-                changed += overlap_region.volume()
-                new_off_regions.add(overlap_region)
-        for changed_region in new_off_regions:
-            for off_region in self.off_regions:
-                if off_region.is_overlapping(changed_region):
-                    overlap_region = off_region.get_overlap(changed_region)
-                    changed = max(changed - overlap_region.volume(), 0)
-        self.off_regions = self.off_regions.union(new_off_regions)
-        self.on_cubes -= changed
+            if region.is_overlapping(on_region):
+                overlap_region = region.get_overlap(on_region)
+                off_regions_to_add.append(overlap_region)
+                volume_change -= overlap_region.volume()
+        for off_region in self.off_regions:
+            if region.is_overlapping(off_region):
+                overlap_region = region.get_overlap(off_region)
+                on_regions_to_add.append(overlap_region)
+                volume_change += overlap_region.volume()
+        self.on_regions.extend(on_regions_to_add)
+        self.off_regions.extend(off_regions_to_add)
+        self.on_cubes += volume_change
 
 
 class Region:
