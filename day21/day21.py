@@ -71,7 +71,6 @@ def part2(players):
             whose_turn_next = Board.next_to_play(whose_turn)
             outcomes = die.roll()
 
-            # for roll, freq in outcomes.items():
             for roll in outcomes:
                 match whose_turn:
                     case 1: # player 1's turn
