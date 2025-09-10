@@ -1,5 +1,3 @@
-from collections import Counter
-
 class Player:
     winning_score = 0
 
@@ -10,6 +8,12 @@ class Player:
 
     def __repr__(self):
         return f"Player {self.id} @ space {self.pos}"
+
+    def __eq__(self, other):
+        return self._get_state() == other._get_state()
+
+    def __hash__(self):
+        return hash(self._get_state())
 
     @staticmethod
     def set_winning_score(score):
@@ -28,11 +32,12 @@ class Player:
     def get_score(self):
         return self.score
 
-    def get_state(self):
-        return (self.id, self.pos, self.score)
-
     def copy(self):
         return Player(self.id, self.pos, self.score)
+
+    def _get_state(self):
+        return (self.id, self.pos, self.score)
+
 
 class Board:
     @staticmethod
@@ -44,6 +49,11 @@ class Board:
         step = 10 - step
         return Board.move(pos, step)
 
+    @staticmethod
+    def next_to_play(whose_turn):
+        return whose_turn % 2 + 1
+
+
 class Dice:
     def __init__(self, rolls=0):
         self.rolls = rolls
@@ -54,13 +64,14 @@ class Dice:
     def roll(self):
         pass
 
+
 class DeterministicDice(Dice):
     def roll(self):
         self.rolls += 1
         return (self.rolls - 1) % 100 + 1
 
 class QuantumDice(Dice):
-    outcomes = dict(Counter([sum([r1, r2, r3]) for r1 in range(1,4) for r2 in range(1,4) for r3 in range(1,4)]))
+    outcomes = [sum([r1, r2, r3]) for r1 in range(1, 4) for r2 in range(1, 4) for r3 in range(1, 4)]
 
     def roll(self):
         return QuantumDice.outcomes

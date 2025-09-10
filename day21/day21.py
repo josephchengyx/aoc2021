@@ -1,9 +1,8 @@
 import re
-from itertools import product
-from DiracDice import Player, Board, DeterministicDice, QuantumDice
+from Game import Player, Board, DeterministicDice, QuantumDice
 
 re_pattern = r"Player (\d+) starting position: (\d+)"
-with open('day21_test.txt', newline='') as f:
+with open('day21_input.txt', newline='') as f:
     reader = f.read().splitlines()
     players = list()
     for line in reader:
@@ -41,45 +40,58 @@ def part1(players):
     return losing_player.get_score() * die.total_times_rolled()
 
 def part2(players):
-    player1_start = players[0][1]
-    player2_start = players[1][1]
+    player1 = Player(*players[0])
+    player2 = Player(*players[1])
     die = QuantumDice()
     Player.set_winning_score(21)
 
-    def play(starting_pos):
+    def play(player1, player2):
         memo = dict()
 
-        def combine(dict1, dict2):
-            # add keys, values from dict2 to dict1
-            for key, value in dict2.items():
-                if key not in dict1:
-                    dict1[key] = 0
-                dict1[key] += value
-            return dict1
+        def add(tup1, tup2):
+            res = list()
+            for elem1, elem2 in zip(tup1, tup2):
+                res.append(elem1 + elem2)
+            return tuple(res)
 
-        def simulate_game(pos, score=0, steps='', count=0):
-            if (pos, score) in memo:
-                return memo[(pos, score)]
+        def simulate_game(player1, player2, whose_turn=1):
+            state = (player1, player2, whose_turn)
 
-            if score >= Player.winning_score:
-                steps_taken = {steps: count}
-                memo[(pos, score)] = steps_taken
-                return steps_taken
+            if state in memo:
+                return memo[state]
 
-            steps_taken = dict()
+            if player1.has_won():
+                memo[state] = (1, 0)
+                return 1, 0
+            elif player2.has_won():
+                memo[state] = (0, 1)
+                return 0, 1
+
+            player_wins = (0, 0)
+            whose_turn_next = Board.next_to_play(whose_turn)
             outcomes = die.roll()
-            for roll, freq in outcomes.items():
-                next_pos = Board.move(pos, roll)
-                steps_taken = combine(steps_taken,
-                                      simulate_game(next_pos, score + next_pos, steps + str(roll), count + freq))
-            memo[(pos, score)] = steps_taken
-            return steps_taken
 
-        return simulate_game(starting_pos)
+            # for roll, freq in outcomes.items():
+            for roll in outcomes:
+                match whose_turn:
+                    case 1: # player 1's turn
+                        player1_copy = player1.copy()
+                        player1_copy.move(roll)
+                        player_wins = add(player_wins, simulate_game(
+                            player1_copy, player2, whose_turn_next))
+                    case 2: # player 2's turn
+                        player2_copy = player2.copy()
+                        player2_copy.move(roll)
+                        player_wins = add(player_wins, simulate_game(
+                            player1, player2_copy, whose_turn_next))
 
-    player1_outcomes = play(player1_start)
-    player2_outcomes = play(player2_start)
-    return player1_outcomes, player2_outcomes
+            memo[state] = player_wins
+            return player_wins
 
-# print(f"Part 1: {part1(players)}")
-# print(f"Part 2: {part2(players)}")
+        return simulate_game(player1, player2)
+
+    player1_wins, player2_wins = play(player1, player2)
+    return max(player1_wins, player2_wins)
+
+print(f"Part 1: {part1(players)}")
+print(f"Part 2: {part2(players)}")
