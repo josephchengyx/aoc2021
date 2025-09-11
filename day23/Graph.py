@@ -3,10 +3,10 @@ import heapq
 import itertools
 
 class Node:
-    def __init__(self, name, room_type):
+    def __init__(self, name, node_type):
         self.name = name
-        self.room_type = room_type
-        self.neighbours = dict() # {node: cost}
+        self.node_type = node_type
+        self.neighbours = dict() # {node: edge weight}
         self.item = None
 
     def __repr__(self):
@@ -16,16 +16,16 @@ class Node:
             return str(self.item)
 
     def __eq__(self, other):
-        return self.name == other.name and self.room_type == other.room_type
+        return self.name == other.name and self.node_type == other.node_type
 
     def __hash__(self):
-        return hash((self.name, self.room_type))
+        return hash((self.name, self.node_type))
 
     def is_empty(self):
         return self.item is None
 
     def get_type(self):
-        return self.room_type
+        return self.node_type
 
     def correct_item(self):
         if self.get_type() == "room":
@@ -44,6 +44,7 @@ class Node:
             return 0
         other.item = self.item
         self.item = None
+        other.item.move_to(other)
         return self.neighbours[other] * other.item.cost()
 
 
@@ -53,6 +54,7 @@ class Graph:
 
     def __init__(self):
         self.nodes = dict() # {name: node}
+        self.items = set()
 
         # initialize nodes
         for node in Graph.rooms:
@@ -113,26 +115,26 @@ class Graph:
     @staticmethod
     def initialize_graph(starting_config):
         graph = Graph()
-        for room, item in zip(Graph.rooms, starting_config):
-            graph.nodes[room].item = Item(item)
+        for node, item in zip(Graph.rooms, starting_config):
+            graph.nodes[node].item = Item(item, graph.nodes[node])
+            graph.items.add(graph.nodes[node].item)
         return graph
 
+    @staticmethod
+    def get_rooms_for_item(item):
+        return list(filter(lambda node: node.correct_item() == item.name, Graph.rooms))
+
     def has_correct_config(self):
-        for room in Graph.rooms:
-            if not self.nodes[room].has_correct_item():
+        for node in Graph.rooms:
+            if not self.nodes[node].has_correct_item():
                 return False
         return True
 
-    def get_rooms_for_item(self, item):
-        if not isinstance(item, Item):
-            item = Item(item)
-        return list(filter(lambda node: node.correct_item() == item.name, Graph.rooms))
+    def move_item(self, src_node, dst_node):
+        src_node, dst_node = self.nodes[src_node], self.nodes[dst_node]
+        return src_node.move_item_to(dst_node)
 
-    def move_item(self, node1, node2):
-        node1, node2 = self.nodes[node1], self.nodes[node2]
-        return node1.move_item_to(node2)
-
-    def has_path(self, src_node, trg_node):
+    def has_path(self, src_node, dst_node):
         def backtrack(node):
             path = list()
             while not node is None:
@@ -140,7 +142,7 @@ class Graph:
                 node = visited[node]
             return path[::-1]
 
-        src_node, trg_node = self.nodes[src_node], self.nodes[trg_node]
+        src_node, dst_node = self.nodes[src_node], self.nodes[dst_node]
         counter = itertools.count()
         pqueue = [(0, next(counter), src_node, None)]
         distances = {node: math.inf for node in self.nodes.values()}
@@ -149,7 +151,7 @@ class Graph:
         while pqueue:
             curr_dist, _, curr_node, prev_node = heapq.heappop(pqueue)
             visited[curr_node] = prev_node
-            if curr_node == trg_node:
+            if curr_node == dst_node:
                 break
             for next_node, next_dist in curr_node.neighbours.items():
                 if (next_node not in visited and next_node.is_empty()
@@ -158,8 +160,8 @@ class Graph:
                     heapq.heappush(pqueue,
                         (curr_dist + next_dist, next(counter), next_node, curr_node))
 
-        if trg_node in visited:
-            return True, backtrack(trg_node)
+        if dst_node in visited:
+            return True, backtrack(dst_node)
         else:
             return False, list()
 
@@ -167,11 +169,15 @@ class Graph:
 class Item:
     values = {'A': 1, 'B': 10, 'C': 100, 'D': 1000}
 
-    def __init__(self, name):
+    def __init__(self, name, node):
         self.name = name
+        self.node = node
 
     def __repr__(self):
         return self.name
+
+    def move_to(self, node):
+        self.node = node
 
     def cost(self):
         return Item.values[self.name]
