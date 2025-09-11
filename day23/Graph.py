@@ -4,10 +4,10 @@ import itertools
 
 class Node:
     def __init__(self, name, node_type):
-        self.name = name
-        self.node_type = node_type
+        self.name = name # str
+        self.node_type = node_type # str
         self.neighbours = dict() # {node: edge weight}
-        self.item = None
+        self.item = None # Item
 
     def __repr__(self):
         if self.is_empty():
@@ -24,18 +24,13 @@ class Node:
     def is_empty(self):
         return self.item is None
 
-    def get_type(self):
-        return self.node_type
-
     def correct_item(self):
-        if self.get_type() == "room":
+        if self.node_type == "room":
             return self.name[0]
         return ''
 
     def has_correct_item(self):
-        if self.get_type() == "room":
-            return self.item.name == self.correct_item()
-        return True
+        return self.correct_item() == self.item.name
 
     def move_item_to(self, other):
         if (self.is_empty() or
@@ -50,11 +45,11 @@ class Node:
 
 class Graph:
     rooms = ["A1", "B1", "C1", "D1", "A2", "B2", "C2", "D2"]
-    halls = ["L1", "L2", "R1", "R2", "AB", "BC", "CD"]
+    halls = ["L2", "L1", "AB", "BC", "CD", "R1", "R2"]
 
     def __init__(self):
-        self.nodes = dict() # {name: node}
-        self.items = set()
+        self.nodes = dict() # {Node.name: Node}
+        self.items = dict() # {Item: Node.name}
 
         # initialize nodes
         for node in Graph.rooms:
@@ -112,27 +107,59 @@ class Graph:
                   [' ', ' ', '#', '#', '#', '#', '#', '#', '#', '#', '#', ' ', ' ']]
         return '\n'.join(map(lambda row: ''.join(map(str, row)), layout))
 
+    def __hash__(self):
+        return hash(self.state())
+
     @staticmethod
     def initialize_graph(starting_config):
         graph = Graph()
+        counter = itertools.count()
         for node, item in zip(Graph.rooms, starting_config):
-            graph.nodes[node].item = Item(item, graph.nodes[node])
-            graph.items.add(graph.nodes[node].item)
+            item = Item(item, next(counter))
+            item.node = graph.nodes[node]
+            graph.nodes[node].item = item
+            graph.items[item] = node
         return graph
 
     @staticmethod
-    def get_rooms_for_item(item):
-        return list(filter(lambda node: node.correct_item() == item.name, Graph.rooms))
+    def from_item_locations(items):
+        graph = Graph()
+        for item, node in items.items():
+            item = item.copy()
+            item.node = graph.nodes[node]
+            graph.nodes[node].item = item
+            graph.items[item] = node
+        return graph
 
-    def has_correct_config(self):
-        for node in Graph.rooms:
-            if not self.nodes[node].has_correct_item():
+    @staticmethod
+    def get_rooms_for(item):
+        return [f"{item.name}1", f"{item.name}2"]
+
+    def copy(self):
+        return Graph.from_item_locations(self.items)
+
+    def state(self):
+        return tuple([(node, item.name) for item, node in self.items.items()])
+
+    def rooms_are_available(self, item):
+        for node in Graph.get_rooms_for(item):
+            if not (self.nodes[node].is_empty() or
+                    self.nodes[node].has_correct_item()):
                 return False
         return True
 
-    def move_item(self, src_node, dst_node):
-        src_node, dst_node = self.nodes[src_node], self.nodes[dst_node]
-        return src_node.move_item_to(dst_node)
+    def get_available_rooms(self, item):
+        rooms = list()
+        for node in Graph.get_rooms_for(item):
+            if self.nodes[node].is_empty():
+                rooms.append(node)
+        return rooms[::-1]
+
+    def has_correct_config(self):
+        for item in self.items:
+            if not item.in_correct_room():
+                return False
+        return True
 
     def has_path(self, src_node, dst_node):
         def backtrack(node):
@@ -143,7 +170,7 @@ class Graph:
             return path[::-1]
 
         src_node, dst_node = self.nodes[src_node], self.nodes[dst_node]
-        counter = itertools.count()
+        counter = itertools.count() # only for breaking ties between items in the pqueue
         pqueue = [(0, next(counter), src_node, None)]
         distances = {node: math.inf for node in self.nodes.values()}
         visited = dict()
@@ -165,19 +192,64 @@ class Graph:
         else:
             return False, list()
 
+    def get_possible_moves(self):
+        moves = list()
+        for item in self.items:
+            if item.in_correct_room(): # don't need to move item
+                continue
+            curr_node = self.items[item]
+            if item.frozen and self.rooms_are_available(item): # move item to correct room
+                next_node = self.get_available_rooms(item)[0]
+                if self.has_path(curr_node, next_node):
+                    moves.append((curr_node, next_node))
+            else: # move to hallway
+                for next_node in Graph.halls:
+                    if self.has_path(curr_node, next_node):
+                        moves.append((curr_node, next_node))
+        return moves
+
+    def move_item(self, src_node, dst_node):
+        has_path, path = self.has_path(src_node, dst_node)
+        if has_path:
+            total_cost = 0
+            for curr_node, next_node in itertools.pairwise(path):
+                curr_node, next_node = self.nodes[curr_node], self.nodes[next_node]
+                total_cost += curr_node.move_item_to(next_node)
+            moved_item = self.nodes[dst_node].item
+            self.items[moved_item] = dst_node
+            return total_cost
+        else:
+            return 0
+
 
 class Item:
     values = {'A': 1, 'B': 10, 'C': 100, 'D': 1000}
 
-    def __init__(self, name, node):
-        self.name = name
-        self.node = node
+    def __init__(self, name, internal_id):
+        self.name = name # str
+        self.node = None # Node
+        self.frozen = False
+        self._internal_id = internal_id # int
 
     def __repr__(self):
         return self.name
 
+    def __eq__(self, other):
+        return self.name == other.name and self._internal_id == other._internal_id
+
+    def __hash__(self):
+        return hash((self.name, self._internal_id))
+
+    def copy(self):
+        return Item(self.name, self._internal_id)
+
+    def in_correct_room(self):
+        return self.node.has_correct_item()
+
     def move_to(self, node):
         self.node = node
+        if not self.frozen:
+            self.frozen = True
 
     def cost(self):
         return Item.values[self.name]
