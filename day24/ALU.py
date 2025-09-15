@@ -67,11 +67,12 @@ class ALU:
     def run(self, instructions, argin):
         if not isinstance(argin, list):
             argin = [argin]
-        self.reset()
         i_in = 0
         for line in instructions:
             op = line[0]
-            if op == 'inp':
+            if op == "inp":
+                if i_in >= len(argin):
+                    return
                 arg1, arg2 = line[1], argin[i_in]
                 i_in += 1
             else:
