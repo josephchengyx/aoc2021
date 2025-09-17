@@ -64,6 +64,10 @@ class ALU:
         self.z = 0
         self.error = False
 
+    def set_state(self, state):
+        self.w, self.x, self.y, self.z = state
+        self.error = False
+
     def run(self, instructions, argin):
         if not isinstance(argin, list):
             argin = [argin]

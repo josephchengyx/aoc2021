@@ -2,7 +2,7 @@ inp w       % block 1
 mul x 0
 add x z
 mod x 26
-div z 1
+div z 1     % increasing block
 add x 11
 eql x w
 eql x 0     % x = (w != z % 26 + 11)
@@ -20,7 +20,7 @@ inp w       % block 2
 mul x 0
 add x z
 mod x 26
-div z 1
+div z 1     % increasing block
 add x 14
 eql x w
 eql x 0     % x = (w != z % 26 + 14)
@@ -38,7 +38,7 @@ inp w       % block 3
 mul x 0
 add x z
 mod x 26
-div z 1
+div z 1     % increasing block
 add x 13
 eql x w
 eql x 0     % x = (w != z % 26 + 13)
@@ -56,7 +56,7 @@ inp w       % block 4
 mul x 0
 add x z
 mod x 26
-div z 26
+div z 26    % decreasing block
 add x -4
 eql x w
 eql x 0     % x = (w != z % 26 - 4)
@@ -74,7 +74,7 @@ inp w       % block 5
 mul x 0
 add x z
 mod x 26
-div z 1
+div z 1     % increasing block
 add x 11
 eql x w
 eql x 0     % x = (w != z % 26 + 11)
@@ -92,7 +92,7 @@ inp w       % block 6
 mul x 0
 add x z
 mod x 26
-div z 1
+div z 1     % increasing block
 add x 10
 eql x w
 eql x 0     % x = (w != z % 26 + 10)
@@ -110,7 +110,7 @@ inp w       % block 7
 mul x 0
 add x z
 mod x 26
-div z 26
+div z 26    % decreasing block
 add x -4
 eql x w
 eql x 0     % x = (w != z % 26 - 4)
@@ -128,7 +128,7 @@ inp w       % block 8
 mul x 0
 add x z
 mod x 26
-div z 26
+div z 26    % decreasing block
 add x -12
 eql x w
 eql x 0     % x = (w != z % 26 - 12)
@@ -146,7 +146,7 @@ inp w       % block 9
 mul x 0
 add x z
 mod x 26
-div z 1
+div z 1     % increasing block
 add x 10
 eql x w
 eql x 0     % x = (w != z % 26 + 10)
@@ -164,7 +164,7 @@ inp w       % block 10
 mul x 0
 add x z
 mod x 26
-div z 26
+div z 26    % decreasing block
 add x -11
 eql x w
 eql x 0     % x = (w != z % 26 - 11)
@@ -182,7 +182,7 @@ inp w       % block 11
 mul x 0
 add x z
 mod x 26
-div z 1
+div z 1     % increasing block
 add x 12
 eql x w
 eql x 0     % x = (w != z % 26 + 12)
@@ -200,7 +200,7 @@ inp w       % block 12
 mul x 0
 add x z
 mod x 26
-div z 26
+div z 26    % decreasing block
 add x -1
 eql x w
 eql x 0     % x = (w != z % 26 - 1)
@@ -218,7 +218,7 @@ inp w       % block 13
 mul x 0
 add x z
 mod x 26
-div z 26
+div z 26    % decreasing block
 add x 0
 eql x w
 eql x 0     % x = (w != z % 26)
@@ -236,7 +236,7 @@ inp w       % block 14
 mul x 0
 add x z
 mod x 26
-div z 26
+div z 26    % decreasing block
 add x -11
 eql x w
 eql x 0     % x = (w != z % 26 - 11)
